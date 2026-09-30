@@ -14,13 +14,13 @@ st.set_page_config(page_title="Quick Sort Simulator", layout="wide")
 # 1. COLOURS AND STYLE
 # ----------------------------------------------------------------------------
 C = {
-    "unchecked": "#D8D1BE",   # inside the current sub-array, not looked at yet
-    "small": "#6FA8DC",       # small zone: numbers <= pivot
-    "big": "#F2B84B",         # big zone: numbers > pivot
-    "cur": "#1F2A37",         # the number being checked right now
-    "pivot": "#E4572E",       # the pivot
-    "done": "#4C956C",        # in its final sorted position
-    "faded": "#EEE9DA",       # outside the current sub-array
+    "unchecked": "#EADFC0",   # inside the current sub-array, not looked at yet
+    "small": "#9DB7F2",       # small zone: numbers <= pivot
+    "big": "#FFC48C",         # big zone: numbers > pivot
+    "cur": "#5B3F8C",         # the number being checked right now
+    "pivot": "#F2777F",       # the pivot
+    "done": "#8FCFA6",        # in its final sorted position
+    "faded": "#F7F0D9",       # outside the current sub-array
 }
 LEGEND = [("unchecked", "Not checked yet"), ("small", "Small zone (less than or equal to pivot)"),
           ("big", "Big zone (greater than pivot)"), ("cur", "Being checked now"),
@@ -29,49 +29,60 @@ LEGEND = [("unchecked", "Not checked yet"), ("small", "Small zone (less than or 
 st.markdown(
     """
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-html, body, [class*="css"], .stMarkdown, button, input { font-family: 'Inter', sans-serif !important; }
-.stApp { background: #FBF8F1; }
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+html, body, [class*="css"], .stMarkdown, button, input { font-family: 'Poppins', sans-serif !important; }
+.stApp { background: linear-gradient(170deg, #FFF3C4 0%, #FFF8E1 45%, #F6EEFF 100%); background-attachment: fixed; }
 [data-testid="stHeader"] { background: transparent; }
-[data-testid="stSidebar"] { background: #F3EDDC; }
+[data-testid="stSidebar"] { background: linear-gradient(180deg, #FFEDB8, #F3E9FF); border-right: 1px solid #F0DFA0; }
 .block-container { padding-top: 2rem; max-width: 1100px; }
-.hero { border-bottom: 3px solid #F2B84B; padding-bottom: 14px; margin-bottom: 18px; }
-.hero h1 { margin: 0; font-size: 2rem; color: #1F2A37; font-weight: 700; }
-.hero p { margin: 4px 0 0; color: #5F6B7A; }
-.steps3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 18px; }
-.steps3 div { background: #fff; border: 1px solid #E8E0CC; border-radius: 12px; padding: 12px 14px; color: #3A4656; font-size: .92rem; }
-.steps3 b { display: block; color: #1F2A37; margin-bottom: 2px; }
-.steps3 span { display: inline-block; background: #1F2A37; color: #fff; border-radius: 50%; width: 22px; height: 22px;
-               text-align: center; line-height: 22px; font-size: .75rem; margin-right: 6px; }
-.card { background: #fff; border: 1px solid #E8E0CC; border-radius: 14px; padding: 16px 18px; margin-bottom: 14px; }
-.card h3 { margin: 0 0 10px; font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; color: #8A7A55; }
-.phase { display: inline-block; background: #1F2A37; color: #fff; border-radius: 999px; padding: 3px 12px;
-         font-size: .78rem; font-weight: 600; margin-bottom: 8px; }
-.say { background: #fff; border: 1px solid #E8E0CC; border-left: 6px solid #F2B84B; border-radius: 12px;
-       padding: 14px 18px; font-size: 1.08rem; color: #1F2A37; min-height: 92px; }
-.sub { font-size: .9rem; color: #5F6B7A; margin-bottom: 4px; }
-.stage { display: flex; align-items: flex-end; gap: 6px; height: 270px; padding-top: 26px; }
-.bar { flex: 1; min-width: 18px; border-radius: 8px 8px 3px 3px; position: relative; transition: all .3s; }
-.bar b { position: absolute; top: -22px; left: 0; right: 0; text-align: center; font-size: .82rem; color: #1F2A37; font-weight: 600; }
-.idx { display: flex; gap: 6px; margin-top: 6px; }
-.idx div { flex: 1; min-width: 18px; text-align: center; font-size: .72rem; color: #8B93A0; min-height: 34px; line-height: 1.3; }
+.hero { background: linear-gradient(120deg, #FFE38A 0%, #FFD0B0 55%, #E5D4FF 100%); border-radius: 24px; padding: 24px 28px;
+        margin-bottom: 18px; box-shadow: 0 10px 30px rgba(140, 100, 190, .15); }
+.hero h1 { margin: 0; font-size: 2.1rem; color: #3D2C4D; font-weight: 700; }
+.hero p { margin: 4px 0 0; color: #6A5678; }
+.steps3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 18px; }
+.steps3 div { background: rgba(255,255,255,.75); border-radius: 18px; padding: 14px 16px; color: #6A5678; font-size: .9rem;
+              box-shadow: 0 6px 18px rgba(140, 100, 190, .10); }
+.steps3 b { display: block; color: #3D2C4D; margin-bottom: 3px; }
+.steps3 span { display: inline-block; border-radius: 50%; width: 24px; height: 24px; text-align: center; line-height: 24px;
+               font-size: .78rem; margin-right: 8px; color: #3D2C4D; font-weight: 700; }
+.steps3 div:nth-child(1) span { background: #FFD36B; }
+.steps3 div:nth-child(2) span { background: #9DB7F2; }
+.steps3 div:nth-child(3) span { background: #8FCFA6; }
+.card { background: rgba(255,255,255,.82); border-radius: 22px; padding: 18px 20px; margin-bottom: 16px;
+        box-shadow: 0 10px 28px rgba(140, 100, 190, .12); }
+.card h3 { margin: 0 0 10px; font-size: .78rem; letter-spacing: .1em; text-transform: uppercase; color: #9A7FB8; }
+.phase { display: inline-block; background: #6B4FA0; color: #fff; border-radius: 999px; padding: 4px 14px;
+         font-size: .78rem; font-weight: 600; margin-bottom: 10px; }
+.say { background: rgba(255,255,255,.9); border-radius: 18px; padding: 16px 20px; font-size: 1.08rem; color: #3D2C4D;
+       min-height: 92px; border-left: 8px solid #FFD36B; box-shadow: 0 8px 22px rgba(140, 100, 190, .12); }
+.sub { font-size: .9rem; color: #7C6A8B; margin-bottom: 4px; }
+.stage { display: flex; align-items: flex-end; gap: 7px; height: 270px; padding-top: 26px; }
+.bar { flex: 1; min-width: 18px; border-radius: 12px 12px 5px 5px; position: relative; transition: all .3s; }
+.bar::after { content: ""; position: absolute; inset: 0; border-radius: inherit;
+              background: linear-gradient(180deg, rgba(255,255,255,.45), rgba(255,255,255,0) 60%); pointer-events: none; }
+.bar b { position: absolute; top: -22px; left: 0; right: 0; text-align: center; font-size: .82rem; color: #3D2C4D; font-weight: 600; }
+.idx { display: flex; gap: 7px; margin-top: 6px; }
+.idx div { flex: 1; min-width: 18px; text-align: center; font-size: .72rem; color: #A896B8; min-height: 34px; line-height: 1.3; }
 .idx div b { font-size: .68rem; }
-.legend { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 10px; font-size: .8rem; color: #5F6B7A; }
-.legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -2px; }
-.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-.stat { background: #fff; border: 1px solid #E8E0CC; border-radius: 12px; padding: 8px 14px; }
-.stat span { display: block; font-size: .72rem; color: #8A7A55; text-transform: uppercase; letter-spacing: .06em; }
-.stat b { font-size: 1.4rem; color: #1F2A37; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 10px; font-size: .8rem; color: #6A5678; }
+.legend i { display: inline-block; width: 13px; height: 13px; border-radius: 5px; margin-right: 6px; vertical-align: -2px; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.stat { background: rgba(255,255,255,.85); border-radius: 18px; padding: 10px 16px; box-shadow: 0 6px 18px rgba(140, 100, 190, .10); }
+.stat span { display: block; font-size: .72rem; color: #9A7FB8; text-transform: uppercase; letter-spacing: .08em; }
+.stat b { font-size: 1.5rem; color: #3D2C4D; }
 .code { font-family: 'Courier New', monospace; font-size: .84rem; line-height: 1.75; }
-.code div { padding: 1px 10px; border-radius: 6px; white-space: pre; color: #5F6B7A; }
-.code div.on { background: #FCE8B2; font-weight: 700; color: #1F2A37; }
+.code div { padding: 1px 10px; border-radius: 8px; white-space: pre; color: #7C6A8B; }
+.code div.on { background: #FFE9A6; font-weight: 700; color: #3D2C4D; }
 .stk { display: flex; flex-direction: column-reverse; gap: 6px; }
-.stk div { background: #FBF8F1; border: 1px solid #E8E0CC; border-radius: 8px; padding: 4px 12px; font-family: 'Courier New', monospace; font-size: .84rem; }
-.stk div:last-child { border-color: #E4572E; background: #FDECE6; font-weight: 700; }
-.note { font-size: .8rem; color: #5F6B7A; margin-top: 8px; }
-div.stButton > button { border-radius: 10px; border: 1px solid #D8D1BE; background: #fff; color: #1F2A37; font-weight: 600; width: 100%; }
-div.stButton > button:hover { border-color: #1F2A37; color: #1F2A37; }
-div.stButton > button[kind="primary"] { background: #1F2A37; color: #fff; border-color: #1F2A37; }
+.stk div { background: #F7F0FF; border-radius: 10px; padding: 4px 12px; font-family: 'Courier New', monospace; font-size: .84rem; color: #5A4870; }
+.stk div:last-child { background: #FFE0E2; color: #7A2F38; font-weight: 700; }
+.note { font-size: .8rem; color: #7C6A8B; margin-top: 8px; }
+div.stButton > button { border-radius: 999px; border: none; background: rgba(255,255,255,.9); color: #4A3B52; font-weight: 600;
+                        width: 100%; box-shadow: 0 4px 12px rgba(140, 100, 190, .15); }
+div.stButton > button:hover { background: #FFF; color: #6B4FA0; box-shadow: 0 6px 16px rgba(140, 100, 190, .25); }
+div.stButton > button[kind="primary"] { background: linear-gradient(120deg, #7A5BB5, #6B4FA0); color: #fff; }
+div.stButton > button[kind="primary"]:hover { color: #fff; }
+[data-testid="stExpander"] { background: rgba(255,255,255,.7); border-radius: 16px; border: none; }
 </style>
 """,
     unsafe_allow_html=True,
@@ -214,10 +225,10 @@ def bars_html(s):
             col = C["unchecked"]
         else:
             col = C["faded"]
-        ring = "box-shadow:0 0 0 3px #1F2A37;" if k in s["sw"] else ""
+        ring = "box-shadow:0 0 0 3px #5B3F8C;" if k in s["sw"] else ""
         h = 12 + (v - mn) / (mx - mn or 1) * 88
         bars.append(f'<div class="bar" style="height:{h:.0f}%;background:{col};{ring}"><b>{v}</b></div>')
-        tag_html = f'<br><b style="color:{col if col != C["faded"] else "#8B93A0"}">{tag}</b>' if tag else ""
+        tag_html = f'<br><b style="color:{col if col != C["faded"] else "#A896B8"}">{tag}</b>' if tag else ""
         idx.append(f"<div>{k}{tag_html}</div>")
     legend = "".join(f'<span><i style="background:{C[k]}"></i>{t}</span>' for k, t in LEGEND)
     return (f'<div class="sub">{s["sub"] or "&nbsp;"}</div><div class="stage">{"".join(bars)}</div>'
