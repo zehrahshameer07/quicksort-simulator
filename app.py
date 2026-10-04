@@ -23,7 +23,7 @@ C = {
     "faded": "#F8EEDC",       # outside the current sub-array
 }
 LEGEND = [("unchecked", "Not checked yet"), ("small", "Small zone (less than or equal to pivot)"),
-          ("big", "Big zone (greater than pivot)"), ("cur", "Being checked now"),
+          ("big", "Big zone (greater than pivot)"), ("cur", "Pointer i or j / number being checked"),
           ("pivot", "Pivot"), ("done", "Final sorted position")]
 
 st.markdown(
@@ -119,10 +119,12 @@ PSEUDO = [
     "    QuickSort(A, lo, p - 1)",
     "    QuickSort(A, p + 1, hi)",
     "Partition(A, lo, hi):",
-    "  pivot = A[hi];  i = lo - 1",
-    "  for j = lo to hi - 1:",
-    "    if A[j] <= pivot:  i++; swap(A[i], A[j])",
-    "  swap(A[i + 1], A[hi]);  return i + 1",
+    "  pivot = A[lo];  i = lo + 1;  j = hi",
+    "  while i <= j:",
+    "    move i right while A[i] <= pivot",
+    "    move j left while A[j] >= pivot",
+    "    if i < j:  swap(A[i], A[j]);  i++;  j--",
+    "  swap(A[lo], A[j]);  return j",
 ]
 
 
@@ -132,13 +134,13 @@ def build_steps(arr, mode):
     n_ = {"cmp": 0, "swp": 0}
     rng = lambda x, y: set(range(x, y))
 
-    def snap(phase, msg, line=0, lo=None, hi=None, piv=None, cur=None, small=(), big=(), sw=()):
+    def snap(phase, msg, line=0, lo=None, hi=None, piv=None, cur=None, small=(), big=(), sw=(), ptrs=None):
         sub = ""
         if lo is not None and lo <= hi:
             sub = "Working on: " + ", ".join(str(v) for v in a[lo:hi + 1]) + f"   (positions {lo} to {hi})"
         steps.append(dict(a=list(a), lo=lo, hi=hi, piv=piv, cur=cur, small=set(small), big=set(big),
                           sw=list(sw), done=set(done), cmp=n_["cmp"], swp=n_["swp"], stack=list(stack),
-                          line=line, phase=phase, msg=msg, sub=sub))
+                          line=line, phase=phase, msg=msg, sub=sub, ptrs=dict(ptrs or {})))
 
     def pick(lo, hi):
         if mode == "First element":
@@ -152,55 +154,72 @@ def build_steps(arr, mode):
             return sorted([lo, m, hi], key=lambda k: a[k])[1]
         return hi
 
+    def hoare(lo, hi):
+        p0 = pick(lo, hi)
+        if p0 != lo:
+            a[p0], a[lo] = a[lo], a[p0]
+            n_["swp"] += 1
+            snap("Choose the pivot",
+                 f"Strategy: {mode.lower()}. The pivot is {a[lo]}. It is swapped to the first position ({lo}) "
+                 f"so it stays out of the way while the pointers move.", 6, lo, hi, piv=lo, sw=(p0, lo))
+        else:
+            snap("Choose the pivot", f"The pivot is the first number, {a[lo]}.", 6, lo, hi, piv=lo)
+        pivot, i, j = a[lo], lo + 1, hi
+
+        def pt():
+            return {i: "i,j"} if i == j else {i: "i", j: "j"}
+
+        def sn(phase, msg, line):
+            snap(phase, msg, line, lo, hi, piv=lo, small=rng(lo + 1, i), big=rng(j + 1, hi + 1), ptrs=pt())
+
+        sn("Get ready to scan",
+           f"The pivot {pivot} stays at the left end. i starts at index {i} and moves right. "
+           f"j starts at index {j} and moves left.", 6)
+        while i <= j:
+            while i <= j:
+                n_["cmp"] += 1
+                if a[i] <= pivot:
+                    sn("Move i", f"{a[i]} is less than or equal to the pivot {pivot}, so i moves right.", 8)
+                    i += 1
+                else:
+                    sn("i stops", f"{a[i]} is greater than the pivot {pivot}, so i stops here.", 8)
+                    break
+            while i <= j:
+                n_["cmp"] += 1
+                if a[j] >= pivot:
+                    sn("Move j", f"{a[j]} is greater than or equal to the pivot {pivot}, so j moves left.", 9)
+                    j -= 1
+                else:
+                    sn("j stops", f"{a[j]} is smaller than the pivot {pivot}, so j stops here.", 9)
+                    break
+            if i < j:
+                x, y = a[i], a[j]
+                a[i], a[j] = y, x
+                n_["swp"] += 1
+                snap("Swap", f"{x} is on the left but belongs on the right, and {y} is the opposite. Swap them.",
+                     10, lo, hi, piv=lo, small=rng(lo + 1, i + 1), big=rng(j, hi + 1), sw=(i, j))
+                i += 1
+                j -= 1
+        sn("Pointers cross", f"i (index {i}) is now to the right of j (index {j}), so the scan is over.", 7)
+        p, old = j, a[j]
+        if p != lo:
+            a[lo], a[p] = a[p], a[lo]
+            n_["swp"] += 1
+        done.add(p)
+        msg = (f"The pivot {pivot} swaps with data[j], which is {old}. It is now in its final sorted position, "
+               f"with smaller numbers on its left and larger ones on its right." if p != lo else
+               f"j came all the way back to the pivot, so the pivot swaps with itself. {pivot} is now in its "
+               f"final sorted position and no number in this part is smaller than it.")
+        snap("Place the pivot", msg, 11, lo, hi, piv=p, small=rng(lo, p), big=rng(p + 1, hi + 1),
+             sw=(lo, p) if p != lo else ())
+        return p
+
     def qs(lo, hi):
         stack.append(f"QuickSort({lo}, {hi})")
         if lo < hi:
             snap("Current sub-array",
                  f"We now sort positions {lo} to {hi}, which holds {hi - lo + 1} numbers.", 1, lo, hi)
-            p = pick(lo, hi)
-            if p != hi:
-                a[p], a[hi] = a[hi], a[p]
-                n_["swp"] += 1
-                snap("Choose the pivot",
-                     f"Strategy: {mode.lower()}. The pivot is {a[hi]}. It is swapped to the last position "
-                     f"({hi}) so it stays out of the way while we scan.", 6, lo, hi, piv=hi, sw=(p, hi))
-            else:
-                snap("Choose the pivot", f"The pivot is the last number, {a[hi]}.", 6, lo, hi, piv=hi)
-            pivot, i = a[hi], lo - 1
-            snap("Get ready to scan",
-                 f"We will check every number from left to right and compare it with the pivot {pivot}. "
-                 f"Small numbers go to the left (blue zone), big ones stay on the right (yellow zone).",
-                 6, lo, hi, piv=hi)
-            for j in range(lo, hi):
-                n_["cmp"] += 1
-                ok = a[j] <= pivot
-                snap("Compare",
-                     f"Compare {a[j]} with the pivot {pivot}. Is {a[j]} less than or equal to {pivot}?",
-                     7, lo, hi, piv=hi, cur=j, small=rng(lo, i + 1), big=rng(i + 1, j))
-                if ok:
-                    i += 1
-                    same = i == j
-                    a[i], a[j] = a[j], a[i]
-                    n_["swp"] += 1
-                    snap("Move to small zone",
-                         (f"Yes. {a[j]} is already next to the small zone, so it simply joins it."
-                          if same else
-                          f"Yes. {a[i]} is small, so it joins the small zone. It swaps places with {a[j]}, "
-                          f"the first number of the big zone."),
-                         8, lo, hi, piv=hi, small=rng(lo, i + 1), big=rng(i + 1, j + 1),
-                         sw=() if same else (i, j))
-                else:
-                    snap("Stays in big zone",
-                         f"No. {a[j]} is greater than {pivot}, so it stays in the big zone.",
-                         8, lo, hi, piv=hi, small=rng(lo, i + 1), big=rng(i + 1, j + 1))
-            a[i + 1], a[hi] = a[hi], a[i + 1]
-            n_["swp"] += 1
-            p = i + 1
-            done.add(p)
-            snap("Place the pivot",
-                 f"Scan finished. The pivot {a[p]} swaps into position {p}, exactly between the small and big "
-                 f"zones. It is now in its final sorted position.",
-                 9, lo, hi, piv=p, small=rng(lo, p), big=rng(p + 1, hi + 1), sw=(p, hi))
+            p = hoare(lo, hi)
             snap("Sort the left side",
                  f"Repeat the whole process on the left side (positions {lo} to {p - 1})."
                  + (" It is empty, so there is nothing to do." if p - 1 < lo else ""), 3, lo, hi)
@@ -231,11 +250,14 @@ def bars_html(s):
     for k, v in enumerate(a):
         in_range = s["lo"] is not None and s["lo"] <= k <= s["hi"]
         tag = ""
+        ptr = s.get("ptrs", {}).get(k)
         if k == s["piv"] and k not in s["done"]:
-            col, tag = C["pivot"], "pivot"
+            col, tag = C["pivot"], "pivot" + (f",{ptr}" if ptr else "")
         elif k in s["done"]:
             col = C["done"]
             tag = "pivot" if k == s["piv"] else ""
+        elif ptr:
+            col, tag = C["cur"], ptr
         elif k == s["cur"]:
             col, tag = C["cur"], "checking"
         elif k in s["small"]:
@@ -258,8 +280,9 @@ def bars_html(s):
 
 
 def code_html(line):
+    lines = PSEUDO
     rows = "".join(f'<div class="{"on" if k == line else ""}">{t.replace("<", "&lt;")}</div>'
-                   for k, t in enumerate(PSEUDO))
+                   for k, t in enumerate(lines))
     return f'<div class="code">{rows}</div>'
 
 
@@ -273,10 +296,10 @@ def stack_html(stack):
 # 4. STATE + SIDEBAR
 # ----------------------------------------------------------------------------
 if "inp" not in st.session_state:
-    st.session_state.inp = "38, 27, 43, 3, 9, 82, 10, 55, 21, 64"
+    st.session_state.inp = "35, 12, 43, 8, 27, 19, 50"
     st.session_state.idx = 0
     st.session_state.sig = None
-    st.session_state.arr = [38, 27, 43, 3, 9, 82, 10, 55, 21, 64]
+    st.session_state.arr = [35, 12, 43, 8, 27, 19, 50]
 
 
 def random_array():
@@ -295,10 +318,10 @@ with st.sidebar:
     st.markdown("### Setup")
     st.text_input("Numbers to sort (separate with commas, then press Enter)", key="inp")
     st.button("Random numbers", on_click=random_array)
-    mode = st.selectbox("Pivot strategy", ["Last element", "First element", "Middle element",
+    mode = st.selectbox("Pivot strategy", ["First element", "Last element", "Middle element",
                                            "Random element", "Median of three"])
-    speed = st.slider("Play speed", 1, 10, 5)
-    st.caption("Tip: enter 1, 2, 3, 4, 5, 6, 7, 8 with the last-element strategy to see the worst case. "
+    speed = st.slider("Play speed (1 = slowest)", 1, 10, 2)
+    st.caption("Tip: enter 1, 2, 3, 4, 5, 6, 7, 8 with the first-element strategy to see the worst case. "
                "Then switch to median of three and compare the recursion depth.")
 
 try:
@@ -359,7 +382,8 @@ def draw(k):
     code_ph.markdown(
         f'<div class="card"><h3>Pseudocode</h3>{code_html(s["line"])}'
         '<div class="note">The highlighted line is the one being executed. '
-        'i is the last position of the small zone. j is the number being checked.</div></div>',
+        'i moves right looking for a number greater than the pivot. '
+        'j moves left looking for a number smaller than the pivot.</div></div>',
         unsafe_allow_html=True)
     stack_ph.markdown(
         f'<div class="card"><h3>Recursion call stack</h3>{stack_html(s["stack"])}'
@@ -375,7 +399,7 @@ if play:
     for k in range(st.session_state.idx, len(steps)):
         st.session_state.idx = k
         draw(k)
-        time.sleep(1.25 - speed * 0.11)
+        time.sleep(2.6 - speed * 0.22)
 
 with st.expander("Complexity"):
     st.markdown("""
